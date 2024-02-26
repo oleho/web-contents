@@ -1,0 +1,209 @@
+---
+## namespcae customera
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: customera
+  labels:
+    partition: customera
+---
+## namespcae customera
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: customerb
+  labels:
+    partition: customerb
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: migops
+  labels:
+    team: migops
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devops
+  labels:
+    team: devops
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: presales
+  labels:
+    team: presales
+---
+
+# NetworkPolicy
+kind: Pod
+apiVersion: v1
+metadata:
+  name: web
+  namespace: migops
+  labels:
+    app: webwas
+    tier: frontend
+spec:
+  containers:
+  - name: web
+    image: smlinux/cent-mysql:v1
+    command: ["/bin/bash"]
+    args: ["-c", "while true; do echo hello; sleep 10;done"]
+
+---
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: was
+  namespace: migops
+  labels:
+    app: webwas
+    tier: application
+spec:
+  containers:
+  - name: was
+    image: smlinux/cent-mysql:v1
+    command: ["/bin/bash"]
+    args: ["-c", "while true; do echo hello; sleep 10;done"]
+
+---
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: db
+  namespace: migops
+  labels:
+    app: webwas
+    tier: database
+spec:
+  containers:
+    - name: db
+      image: mysql:5.7
+      env:
+      - name: MYSQL_ROOT_PASSWORD
+        value: pass
+
+---
+## init container
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    command: ['sh', '-c', 'if [ ! -e "/opt/test" ];then exit;fi;']
+    volumeMounts:
+    - name: workdir
+      mountPath: /opt
+  volumes:
+  - name: workdir
+    emptyDir: {}
+
+---
+## log exam
+apiVersion: v1
+kind: Pod
+metadata:
+  name: custom-app
+  namespace: default
+spec:
+  containers:
+  - name: app
+    image: busybox
+    command: ['/bin/sh', '-c', 'while :;do echo -e "find files\nerror: file not found\nToday: $(date)\nHostname: $(hostname)"; sleep 60; done']
+
+---
+## sidecar exam
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cka-webserver
+  namespace: default
+spec:
+  containers:
+  - image: nginx:1.14
+    name: webserver
+    volumeMounts:
+    - mountPath: /var/log/nginx
+      name: log
+  volumes:
+  - name: log
+    emptyDir: {}
+
+---
+## cpu load :
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    name: overloaded-cpu
+  name: campus-01
+spec:
+  containers:
+  - name: campus
+    image: smlinux/vish-stress
+    resources:
+      limits:
+        cpu: "0.4"
+        memory: "300Mi"
+      requests:
+        cpu: "0.4"
+        memory: "250Mi"
+    args:
+    - -cpus
+    - "1"
+    - -mem-total
+    - "150Mi"
+    - -mem-alloc-size
+    - "100Mi"
+    - -mem-alloc-sleep
+    - "1s"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    name: overloaded-cpu
+  name: fast-01
+spec:
+  containers:
+  - name: fast
+    image: smlinux/vish-stress
+    resources:
+      limits:
+        cpu: "0.2"
+        memory: "300Mi"
+      requests:
+        cpu: "0.2"
+        memory: "250Mi"
+    args:
+    - -cpus
+    - "1"
+    - -mem-total
+    - "250Mi"
+    - -mem-alloc-size
+    - "100Mi"
+    - -mem-alloc-sleep
+    - "1s"
+
+---
+#multi-container
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-sleep
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do sleep 1000; done"]
